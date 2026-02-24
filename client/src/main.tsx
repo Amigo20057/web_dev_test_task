@@ -6,6 +6,9 @@ import "./index.css";
 import OrdersPage from "./pages/orders";
 import UploadPage from "./components/upload-file";
 import ManualCreatePage from "./pages/manual-create";
+import AuthLayout from "./layouts/auth-layout";
+import RegisterPage from "./pages/register";
+import LoginPage from "./pages/login";
 
 const router = createBrowserRouter([
   {
@@ -27,6 +30,20 @@ const router = createBrowserRouter([
       {
         path: "create-order",
         element: <ManualCreatePage />,
+      },
+    ],
+  },
+  {
+    path: "/auth",
+    element: <AuthLayout />,
+    children: [
+      {
+        path: "register",
+        element: <RegisterPage />,
+      },
+      {
+        path: "login",
+        element: <LoginPage />,
       },
     ],
   },

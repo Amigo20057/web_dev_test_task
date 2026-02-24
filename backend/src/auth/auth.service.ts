@@ -5,7 +5,9 @@ import pool from '../db/db';
 const SALT_ROUNDS = 10;
 
 export const register = async (email: string, password: string) => {
-  const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+  const existing = await pool.query('SELECT id FROM users WHERE email = $1', [
+    email,
+  ]);
   if (existing.rows.length > 0) {
     throw new Error('User already exists');
   }
@@ -20,7 +22,9 @@ export const register = async (email: string, password: string) => {
 };
 
 export const login = async (email: string, password: string) => {
-  const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+  const result = await pool.query('SELECT * FROM users WHERE email = $1', [
+    email,
+  ]);
   const user = result.rows[0];
 
   if (!user) {
@@ -35,7 +39,10 @@ export const login = async (email: string, password: string) => {
   const token = jwt.sign(
     { id: user.id, email: user.email },
     process.env.JWT_SECRET as string,
-    { expiresIn: (process.env.JWT_EXPIRES_IN ?? '7d') as SignOptions['expiresIn'] }
+    {
+      expiresIn: (process.env.JWT_EXPIRES_IN ??
+        '7d') as SignOptions['expiresIn'],
+    }
   );
 
   return token;

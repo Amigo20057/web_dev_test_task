@@ -35,10 +35,10 @@ export const loginHandler = async (req: Request, res: Response) => {
     const token = await authService.login(email, password);
 
     res.cookie('token', token, {
-      httpOnly: true, // недоступна через JS на клієнті
-      secure: process.env.NODE_ENV === 'production', // тільки https у проді
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 днів у мілісекундах
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return res.status(200).json({ message: 'Logged in successfully' });
