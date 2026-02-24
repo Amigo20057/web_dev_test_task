@@ -11,8 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/1-init.sql
-      - ./db/ny_tax_backup.sql:/docker-entrypoint-initdb.d/2-backup.sql
+      - ./db/ny_tax.sql:/docker-entrypoint-initdb.d/1-ny_tax.sql
 
   backend:
     build: ./backend
@@ -34,7 +33,7 @@ services:
     env_file:
       - ./client/.env
     ports:
-      - "5173:5173"
+      - "4173:4173"
 
 volumes:
   postgres_data:
