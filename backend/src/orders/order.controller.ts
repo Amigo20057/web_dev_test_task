@@ -1,38 +1,138 @@
-import { NextFunction, Request, Response, Router } from "express";
-import multer from 'multer';
-import service from './order.service';
+import { Request, Response } from 'express';
+import { createOrder, getOrders } from './order.service';
+import pool from '../db/db';
+import csv from 'csv-parser';
+import { Readable } from 'stream';
 
-const router = Router();
+export const createOrderHandler = async (req: Request, res: Response) => {
+  try {
+    const { latitude, longitude, subtotal } = req.body;
 
-
-// multer memory storage (зручно для PoC). Для великих файлів краще diskStorage.
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10 MB
-
-// Функція-обгортка для створення контролера з інжектованим сервісом
-router.post(
-    '/import',
-    upload.single('file'), // expects field name 'file'
-    async (req: Request, res: Response, next: NextFunction) => {
-      try {
-        const file = req.file;
-        if (!file) {
-          return res.status(400).json({ message: 'CSV file is required (field name: file)' });
-        }
-
-        const result = await service.importFromCSV(file);
-        // Якщо є помилки, повертаємо їх у тілі, але статус 200 — успішна обробка частково
-        return res.status(200).json({
-          message: 'Import finished',
-          processed: result.processed,
-          saved: result.saved,
-          errors: result.errors
-        });
-      } catch (err) {
-        next(err);
-      }
+    if (!latitude || !longitude || !subtotal) {
+      return res.status(400).json({ error: 'Missing fields' });
     }
-  );
 
+    const insertResult = await createOrder(longitude, latitude, subtotal);
 
+    res.json(insertResult.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error', message: error });
+  }
+};
 
-export const OrderController = router;
+export const getOrdersHandler = async (req: Request, res: Response) => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getOrders(req.query as any);
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+export const uploadCsvHandler = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'CSV file required' });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const results: any[] = [];
+    const stream = Readable.from(req.file.buffer);
+
+    stream
+      .pipe(csv())
+      .on('data', (data) => results.push(data))
+      .on('end', async () => {
+        const client = await pool.connect();
+
+        let successCount = 0;
+        let errorCount = 0;
+        let totalTax = 0;
+
+        try {
+          for (const row of results) {
+            try {
+              const { longitude, latitude, subtotal } = row;
+
+              const taxResult = await client.query(
+                `SELECT * FROM calculate_order($1,$2,$3)`,
+                [longitude, latitude, subtotal]
+              );
+
+              if (!taxResult.rows.length) {
+                console.log('No tax region found for:', longitude, latitude);
+                errorCount++;
+                continue;
+              }
+
+              const tax = taxResult.rows[0];
+
+              await client.query(
+                `
+                INSERT INTO orders (
+                  longitude,
+                  latitude,
+                  subtotal,
+                  county,
+                  state_rate,
+                  county_rate,
+                  city_rate,
+                  special_rate,
+                  composite_tax_rate,
+                  tax_amount,
+                  total_amount,
+                  jurisdictions
+                )
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+                `,
+                [
+                  longitude,
+                  latitude,
+                  subtotal,
+                  tax.county,
+                  tax.state_rate,
+                  tax.county_rate,
+                  tax.city_rate,
+                  tax.special_rate,
+                  tax.composite_tax_rate,
+                  tax.tax_amount,
+                  tax.total_amount,
+                  tax.jurisdictions,
+                ]
+              );
+
+              successCount++;
+              totalTax += Number(tax.tax_amount);
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } catch (rowError: any) {
+              console.error('Row error:', {
+                row,
+                message: rowError.message,
+              });
+              errorCount++;
+            }
+          }
+
+          res.json({
+            message: 'CSV uploaded successfully',
+            orders: successCount,
+            totalTax,
+            errors: errorCount,
+          });
+        } finally {
+          client.release();
+        }
+      });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Upload failed' });
+  }
+};
+
+export const deleteOrdersHandler = async (req: Request, res: Response) => {
+  await pool.query('TRUNCATE TABLE orders RESTART IDENTITY CASCADE');
+  res.json({ message: 'All orders deleted' });
+};

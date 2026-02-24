@@ -1,5 +1,4 @@
 import { LayoutPanelLeft } from "lucide-react";
-import Search from "./ui/search";
 
 export default function Header() {
   return (
@@ -10,8 +9,6 @@ export default function Header() {
       </h1>
 
       <div className="flex items-center gap-4">
-        <Search />
-
         <div className="w-8 h-8 rounded-full bg-gray-300" />
       </div>
     </header>

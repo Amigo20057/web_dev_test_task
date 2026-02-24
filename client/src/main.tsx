@@ -19,8 +19,6 @@ const router = createBrowserRouter([
       {
         path: "orders",
         element: <OrdersPage />,
-        // Component: Root,
-        // loader: loaderData
       },
       {
         path: "upload",

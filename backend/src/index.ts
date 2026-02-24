@@ -4,8 +4,8 @@ import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRouter from './auth/auth.router';
-import { OrderController } from './orders/order.controller';
 import pool from './db/db';
+import orderRouter from './orders/order.router';
 
 const app = express();
 const port = process.env.PORT;
@@ -16,11 +16,11 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use('/auth', authRouter);
-app.use('/api/orders', OrderController);
+app.use('/orders', orderRouter);
 
 const start = async () => {
   try {
-    await pool.query('SELECT 1'); // перевірка з'єднання
+    await pool.query('SELECT 1');
     console.log('Database connected');
 
     app.listen(port, () => {
@@ -33,5 +33,3 @@ const start = async () => {
 };
 
 start();
-
-export default app;

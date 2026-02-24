@@ -7,7 +7,9 @@ export const registerHandler = async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+      return res
+        .status(400)
+        .json({ message: 'Email and password are required' });
     }
 
     const user = await authService.register(email, password);
@@ -25,13 +27,15 @@ export const loginHandler = async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+      return res
+        .status(400)
+        .json({ message: 'Email and password are required' });
     }
 
     const token = await authService.login(email, password);
 
     res.cookie('token', token, {
-      httpOnly: true,      // недоступна через JS на клієнті
+      httpOnly: true, // недоступна через JS на клієнті
       secure: process.env.NODE_ENV === 'production', // тільки https у проді
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 днів у мілісекундах

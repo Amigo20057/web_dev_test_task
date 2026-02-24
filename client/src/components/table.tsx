@@ -4,17 +4,33 @@ interface Column<T> {
   key: keyof T;
 }
 
-interface IProps<T> {
+interface IProps<T extends { id: number }> {
   data: T[];
   isLoading?: boolean;
   options: Column<T>[];
 }
 
-export default function Table<T>({
+export default function Table<T extends { id: number }>({
   data,
   isLoading = false,
   options,
 }: IProps<T>) {
+  const formatValue = (value: any, key: keyof T) => {
+    if (key === "id") {
+      return String(value);
+    }
+
+    if (typeof value === "number") {
+      return value.toFixed(2);
+    }
+
+    if (typeof value === "string" && value.includes("T")) {
+      return new Date(value).toLocaleString();
+    }
+
+    return String(value ?? "-");
+  };
+
   return (
     <div className="w-full bg-[var(--card)] rounded-[var(--main-radius)] shadow-[var(--main-shadows)] border border-[var(--main-border)] overflow-hidden">
       <div className="w-full overflow-x-auto">
@@ -34,11 +50,11 @@ export default function Table<T>({
           </thead>
 
           <tbody>
-            {isLoading ? (
+            {isLoading && data.length === 0 ? (
               <tr>
                 <td
                   colSpan={options.length}
-                  className="text-center py-10 text-[var(--second-txt-color)]"
+                  className="text-center py-10 text-gray-500"
                 >
                   Loading...
                 </td>
@@ -47,20 +63,20 @@ export default function Table<T>({
               <tr>
                 <td
                   colSpan={options.length}
-                  className="text-center py-10 text-[var(--second-txt-color)]"
+                  className="text-center py-10 text-gray-500"
                 >
                   No data
                 </td>
               </tr>
             ) : (
-              data.map((row, index) => (
-                <tr key={index} className="hover:bg-gray-50">
+              data.map((row) => (
+                <tr key={row.id} className="hover:bg-gray-50">
                   {options.map((col) => (
                     <td
                       key={String(col.key)}
                       className="px-6 py-4 border-b border-[var(--main-border)]"
                     >
-                      {String(row[col.key])}
+                      {formatValue(row[col.key], col.key)}
                     </td>
                   ))}
                 </tr>
