@@ -56,7 +56,7 @@ export default function UploadFile() {
 
         <div className="text-center">
           <p className="text-[var(--main-txt-color)] font-medium">
-            Drag CSV file here or click to upload
+            Сlick to upload
           </p>
           <p className="text-sm text-[var(--second-txt-color)] mt-1">
             Supported format: .csv

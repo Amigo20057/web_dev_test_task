@@ -1,4 +1,5 @@
 import { useState } from "react";
+import axios from "../../utils/axios";
 
 export default function FormCreateOrder() {
   const [lat, setLat] = useState("");
@@ -8,11 +9,24 @@ export default function FormCreateOrder() {
 
   const tax = subtotal ? (Number(subtotal) * 0.1).toFixed(2) : "0.00";
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaved(true);
+    setSaved(false);
 
-    // тут можно отправлять на API
+    try {
+      await axios.post("/orders", {
+        latitude: Number(lat),
+        longitude: Number(lon),
+        subtotal: Number(subtotal),
+      });
+
+      setSaved(true);
+      setLat("");
+      setLon("");
+      setSubtotal("");
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (

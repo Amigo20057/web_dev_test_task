@@ -1,61 +1,50 @@
 import pool from '../db/db';
 
 export async function createOrder(
-  longitude: string,
-  latitude: string,
+  longitude: number,
+  latitude: number,
   subtotal: number
 ) {
-  const taxResult = await pool.query(
+  const result = await pool.query(
     `
-      SELECT *
-      FROM calculate_order($1, $2, $3)
-      `,
-    [longitude, latitude, subtotal]
-  );
-
-  if (taxResult.rows.length === 0) {
-    throw new Error('Location not in NY');
-  }
-
-  const taxData = taxResult.rows[0];
-
-  return await pool.query(
-    `
-      INSERT INTO orders (
-        longitude,
-        latitude,
-        subtotal,
-        county,
-        state_rate,
-        county_rate,
-        city_rate,
-        special_rate,
-        composite_tax_rate,
-        tax_amount,
-        total_amount,
-        jurisdictions
-      )
-      VALUES (
-        $1,$2,$3,
-        $4,$5,$6,$7,$8,$9,$10,$11,$12
-      )
-      RETURNING *
-      `,
-    [
+    INSERT INTO orders (
       longitude,
       latitude,
       subtotal,
-      taxData.county,
-      taxData.state_rate,
-      taxData.county_rate,
-      taxData.city_rate,
-      taxData.special_rate,
-      taxData.composite_tax_rate,
-      taxData.tax_amount,
-      taxData.total_amount,
-      taxData.jurisdictions,
-    ]
+      county,
+      state_rate,
+      county_rate,
+      city_rate,
+      special_rate,
+      composite_tax_rate,
+      tax_amount,
+      total_amount,
+      jurisdictions
+    )
+    SELECT
+      $1,
+      $2,
+      $3,
+      calc.county,
+      calc.state_rate,
+      calc.county_rate,
+      calc.city_rate,
+      calc.special_rate,
+      calc.composite_tax_rate,
+      calc.tax_amount,
+      calc.total_amount,
+      calc.jurisdictions
+    FROM calculate_order($1, $2, $3) calc
+    RETURNING *
+    `,
+    [longitude, latitude, subtotal]
   );
+
+  if (result.rows.length === 0) {
+    throw new Error('Location not in NY');
+  }
+
+  return result;
 }
 
 export async function getOrders(params: {
