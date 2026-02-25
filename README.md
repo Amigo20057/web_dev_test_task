@@ -28,7 +28,7 @@ ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)
 Для оптимізації запитів додано GiST-індекси на геометричні поля.
 
 ---
-
+d
 ## Геодані
 
 Межі округів були імпортовані з TIGER/Line Shapefiles (US Census Bureau).
@@ -124,3 +124,7 @@ docker compose up --build
 - Повну контейнеризацію середовища
 - Відтворюваний деплой
 - Розділення відповідальності між DB / API / UI
+
+---
+
+Тестовий файл: https://drive.google.com/drive/folders/1xz8x-TguobvDBAwfh2q0ksieR04i5GqI?usp=drive_link
