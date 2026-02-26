@@ -32,7 +32,7 @@ ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)
 Для оптимізації запитів додано GiST-індекси на геометричні поля.
 
 ---
-d
+
 ## Геодані
 
 Межі округів були імпортовані з TIGER/Line Shapefiles (US Census Bureau).
