@@ -8,6 +8,7 @@ import { Trash } from "lucide-react";
 export default function OrdersPage() {
   const [order, setOrder] = useState<"ASC" | "DESC">("ASC");
   const [search, setSearch] = useState("");
+  const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null);
 
   const { orders, loading, hasMore, fetchMore, removeAllOrders } = useOrders(
     20,
@@ -28,6 +29,44 @@ export default function OrdersPage() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [hasMore, loading, fetchMore]);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedOrder(null);
+    };
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
+
+  const renderValue = (value: any): React.ReactNode => {
+    if (value === null || value === undefined) {
+      return <span className="text-gray-400">-</span>;
+    }
+
+    if (typeof value === "number") {
+      return value.toFixed(2);
+    }
+
+    if (typeof value === "string" && value.includes("T")) {
+      return new Date(value).toLocaleString();
+    }
+
+    if (typeof value === "object") {
+      return (
+        <div className="ml-4 space-y-1 border-l pl-3">
+          {Object.entries(value).map(([k, v]) => (
+            <div key={k} className="flex justify-between">
+              <span className="text-gray-600">{k}</span>
+              <span>{renderValue(v)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return String(value);
+  };
 
   return (
     <div className="p-8">
@@ -64,6 +103,8 @@ export default function OrdersPage() {
 
       <Table<IOrder>
         isLoading={loading}
+        data={orders}
+        onView={(row) => setSelectedOrder(row)}
         options={[
           { title: "Order ID", key: "id", width: "120px" },
           { title: "County", key: "county", width: "150px" },
@@ -73,11 +114,43 @@ export default function OrdersPage() {
           { title: "Tax", key: "tax_amount", width: "140px" },
           { title: "Total", key: "total_amount", width: "140px" },
         ]}
-        data={orders}
       />
 
       {loading && (
         <div className="text-center py-6 text-gray-500">Loading more...</div>
+      )}
+
+      {selectedOrder && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => setSelectedOrder(null)}
+        >
+          <div
+            className="bg-white rounded-lg p-6 w-[500px] max-h-[80vh] overflow-y-auto shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">
+                Order #{selectedOrder.id}
+              </h2>
+              <button
+                onClick={() => setSelectedOrder(null)}
+                className="text-gray-500 hover:text-black text-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-sm">
+              {Object.entries(selectedOrder).map(([key, value]) => (
+                <div key={key} className="border-b pb-2">
+                  <div className="font-medium mb-1">{key}</div>
+                  <div>{renderValue(value)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
