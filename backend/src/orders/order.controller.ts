@@ -58,7 +58,8 @@ export const uploadCsvHandler = async (req: Request, res: Response) => {
       CREATE TEMP TABLE temp_orders (
         longitude numeric,
         latitude numeric,
-        subtotal numeric
+        subtotal numeric,
+        timestamp TIMESTAMP
       ) ON COMMIT DROP;
     `);
 
@@ -66,6 +67,7 @@ export const uploadCsvHandler = async (req: Request, res: Response) => {
       longitude: string;
       latitude: string;
       subtotal: string;
+      timestamp: Date;
     }[] = [];
 
     await new Promise<void>((resolve, reject) => {
@@ -86,15 +88,15 @@ export const uploadCsvHandler = async (req: Request, res: Response) => {
     const values: unknown[] = [];
     const placeholders = rows
       .map((row, i) => {
-        values.push(row.longitude, row.latitude, row.subtotal);
-        const idx = i * 3;
-        return `($${idx + 1}, $${idx + 2}, $${idx + 3})`;
+        values.push(row.longitude, row.latitude, row.subtotal, row.timestamp);
+        const idx = i * 4;
+        return `($${idx + 1}, $${idx + 2}, $${idx + 3}, $${idx + 4})`;
       })
       .join(',');
 
     await client.query(
       `
-      INSERT INTO temp_orders (longitude, latitude, subtotal)
+      INSERT INTO temp_orders (longitude, latitude, subtotal, timestamp)
       VALUES ${placeholders}
       `,
       values
@@ -113,7 +115,8 @@ export const uploadCsvHandler = async (req: Request, res: Response) => {
         composite_tax_rate,
         tax_amount,
         total_amount,
-        jurisdictions
+        jurisdictions,
+        timestamp
       )
       SELECT
         t.longitude,
@@ -127,7 +130,8 @@ export const uploadCsvHandler = async (req: Request, res: Response) => {
         calc.composite_tax_rate,
         calc.tax_amount,
         calc.total_amount,
-        calc.jurisdictions
+        calc.jurisdictions,
+        t.timestamp
       FROM temp_orders t
       CROSS JOIN LATERAL calculate_order(
         t.longitude,
